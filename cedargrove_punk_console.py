@@ -1,20 +1,21 @@
-# SPDX-FileCopyrightText: 2017 Scott Shawcroft for Adafruit Industries
+# SPDX-FileCopyrightText: 2022 Cedar Grove Maker Studios
 #
 # SPDX-License-Identifier: MIT
 
 """
-`simpleio` - Simple, beginner friendly IO.
+`cedargrove_punk_console` - Simple, beginner friendly IO.
 =================================================
 
-The `simpleio` module contains classes to provide simple access to IO.
+A CircuitPython-based Atari Punk Console emulation class object.
 
-* Author(s): Scott Shawcroft
+* Author(s): JG for Cedar Grove Maker Studios
 """
 import time
 import sys
-import array
+import array  # use ulab instead?
 import digitalio
 import pwmio
+
 
 try:
     # RawSample was moved in CircuitPython 5.x.
@@ -30,8 +31,9 @@ try:
 except ImportError:
     pass  # not always supported by every board!
 
+
 __version__ = "3.0.2"
-__repo__ = "https://github.com/adafruit/Adafruit_CircuitPython_SimpleIO.git"
+__repo__ = "https://github.com/CedarGroveStudios/Punk_Console"
 
 
 def tone(pin, frequency, duration=1, length=100):
@@ -68,171 +70,9 @@ def tone(pin, frequency, duration=1, length=100):
                 time.sleep(duration)
             dac.stop()
 
-
-def bitWrite(x, n, b):  # pylint: disable-msg=invalid-name
-    """
-    Based on the Arduino bitWrite function, changes a specific bit of a value to 0 or 1.
-    The return value is the original value with the changed bit.
-    This function is written for use with 8-bit shift registers
-
-    :param x: numeric value
-    :param n: position to change starting with least-significant (right-most) bit as 0
-    :param b: value to write (0 or 1)
-    """
-    if b == 1:
-        x |= 1 << n & 255
-    else:
-        x &= ~(1 << n) & 255
-    return x
-
-
-def shift_in(data_pin, clock, msb_first=True):
-    """
-    Shifts in a byte of data one bit at a time. Starts from either the LSB or
-    MSB.
-
-    .. warning:: Data and clock are swapped compared to other CircuitPython libraries
-      in order to match Arduino.
-
-    :param ~digitalio.DigitalInOut data_pin: pin on which to input each bit
-    :param ~digitalio.DigitalInOut clock: toggles to signal data_pin reads
-    :param bool msb_first: True when the first bit is most significant
-    :return: returns the value read
-    :rtype: int
-    """
-
-    value = 0
-    i = 0
-
-    for i in range(0, 8):
-        if msb_first:
-            value |= (data_pin.value) << (7 - i)
-        else:
-            value |= (data_pin.value) << i
-        # toggle clock True/False
-        clock.value = True
-        clock.value = False
-        i += 1
-    return value
-
-
-def shift_out(data_pin, clock, value, msb_first=True, bitcount=8):
-    """
-    Shifts out a byte of data one bit at a time. Data gets written to a data
-    pin. Then, the clock pulses hi then low
-
-    .. warning:: Data and clock are swapped compared to other CircuitPython libraries
-      in order to match Arduino.
-
-    :param ~digitalio.DigitalInOut data_pin: value bits get output on this pin
-    :param ~digitalio.DigitalInOut clock: toggled once the data pin is set
-    :param bool msb_first: True when the first bit is most significant
-    :param int value: byte to be shifted
-    :param unsigned bitcount: number of bits to shift
-
-    Example for Metro M0 Express:
-
-    .. code-block:: python
-
-        import digitalio
-        import simpleio
-        from board import *
-        clock = digitalio.DigitalInOut(D12)
-        data_pin = digitalio.DigitalInOut(D11)
-        latchPin = digitalio.DigitalInOut(D10)
-        clock.direction = digitalio.Direction.OUTPUT
-        data_pin.direction = digitalio.Direction.OUTPUT
-        latchPin.direction = digitalio.Direction.OUTPUT
-
-        while True:
-            valueSend = 500
-            # shifting out least significant bits
-            # must toggle latchPin.value before and after shift_out to push to IC chip
-            # this sample code was tested using
-            latchPin.value = False
-            simpleio.shift_out(data_pin, clock, (valueSend>>8), msb_first = False)
-            latchPin.value = True
-            time.sleep(1.0)
-            latchPin.value = False
-            simpleio.shift_out(data_pin, clock, valueSend, msb_first = False)
-            latchPin.value = True
-            time.sleep(1.0)
-
-            # shifting out most significant bits
-            latchPin.value = False
-            simpleio.shift_out(data_pin, clock, (valueSend>>8))
-            latchPin.value = True
-            time.sleep(1.0)
-            latchpin.value = False
-            simpleio.shift_out(data_pin, clock, valueSend)
-            latchpin.value = True
-            time.sleep(1.0)
-    """
-    if bitcount < 0 or bitcount > 32:
-        raise ValueError("bitcount must be in range 0..32 inclusive")
-
-    if msb_first:
-        bitsequence = lambda: range(bitcount - 1, -1, -1)
-    else:
-        bitsequence = lambda: range(0, bitcount)
-
-    for i in bitsequence():
-        tmpval = bool(value & (1 << i))
-        data_pin.value = tmpval
-        # toggle clock pin True/False
-        clock.value = True
-        clock.value = False
-
-
-class DigitalOut:
-    """
-    Simple digital output that is valid until reload.
-
-      :param pin microcontroller.Pin: output pin
-      :param value bool: default value
-      :param drive_mode digitalio.DriveMode: drive mode for the output
-    """
-
-    def __init__(self, pin, **kwargs):
-        self.iopin = digitalio.DigitalInOut(pin)
-        self.iopin.switch_to_output(**kwargs)
-
-    @property
-    def value(self):
-        """The digital logic level of the output pin."""
-        return self.iopin.value
-
-    @value.setter
-    def value(self, value):
-        self.iopin.value = value
-
-
-class DigitalIn:
-    """
-    Simple digital input that is valid until reload.
-
-      :param pin microcontroller.Pin: input pin
-      :param pull digitalio.Pull: pull configuration for the input
-    """
-
-    def __init__(self, pin, **kwargs):
-        self.iopin = digitalio.DigitalInOut(pin)
-        self.iopin.switch_to_input(**kwargs)
-
-    @property
-    def value(self):
-        """The digital logic level of the input pin."""
-        return self.iopin.value
-
-    @value.setter
-    def value(self, value):  # pylint: disable-msg=no-self-use, unused-argument
-        raise AttributeError("Cannot set the value on a digital input.")
-
-
 def map_range(x, in_min, in_max, out_min, out_max):
     """
-    Maps a number from one range to another.
-    Note: This implementation handles values < in_min differently than arduino's map function does.
+    Maps a value from one range to another.
 
     :return: Returns value mapped to new range
     :rtype: float
@@ -250,3 +90,52 @@ def map_range(x, in_min, in_max, out_min, out_max):
     if out_min <= out_max:
         return max(min(mapped, out_max), out_min)
     return min(max(mapped, out_max), out_min)
+
+class Punk_Console:
+    def __init__(self, pin, frequency, pulse_width):
+        self._pin = pin
+        self._freq_in = min(max(frequency, 20), 20000)
+        self._pulse_width_in = min(max(pulse_width, 0.00005), 0.050)
+
+        self._lambda_freq_in = 1 / self._freq_input
+
+        """
+        Input ranges:
+        pulse_width: 500us  to 500ms (2kHz to  2Hz)
+        frequency:    20kHz to  20Hz (50us to 50ms)
+
+        This version of the algorithm uses PWM to build the output waveform.
+        The PWM frequency will shift as to provide the granularity needed to
+        represent both the pulse width input value (_pulse_width_in) and the frequency input
+        wavelength (_lambda_f_in):
+            _pulse_width_freq = 1 / (_pulse_width_in + _lambda_freq_in)
+
+        The PWM duty cycle establishes the relationship between the pulse width
+        input (_pulse_width_in) and the PWM frequency (_pwm_freq):
+            _duty_cycle = _pulse_width_in * _pwm_freq
+
+        Step 1 (initialize):
+            Set the PWM frequency based upon the input values.
+        Step 2 (initialize):
+            Set the PWM duty cycle based upon the PWM frequency and pulse width
+            input values.
+        Step 3 (update):
+            Adjust the PWM duty cycle when the pulse width input changes.
+            Test for boundaries:
+                If the inactive portion of the output waveform becomes larger
+                than the wavelength of the frequency input, adjust the PWM
+                clock upwards (using _pwm_freq_step) until the inactive portion
+                is smaller than or equal to the wavelength of the frequency
+                input.
+                If the inactive portion equals zero, adjust the PWM clock
+                downwards until the inactive portion is no longer zero.
+
+        Notes:
+        If the specified pin is non-PWM, then adjust the duty cycle with the
+        contents of the audiocore.RawSample binary array. The
+        audiocore.RawSample.sample_rate frequency will be proportional to the
+        PWM frequency value, likely the sample_rate divided by the length of the
+        audiocore.RawSample array (number of samples). Consider using ulab for
+        the array if changes become execution time constrained.
+
+        """
