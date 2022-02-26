@@ -5,7 +5,7 @@
 `cedargrove_punk_console` - CircuitPython-based Atari Punk Console.
 =================================================
 
-cedargrove_punk_console.py v0.0225
+cedargrove_punk_console.py v0.0226
 
 A CircuitPython-based Atari Punk Console emulation class object.
 
@@ -141,23 +141,26 @@ class Punk_Console:
     the array if changes become execution time constrained.
     """
 
-    def __init__(self, pin, frequency=0, pulse_width=0, pwm_freq_step=1):
+    def __init__(self, pin, frequency=0, pulse_width=0.210, pwm_freq_step=1):
         self._pin = pin
         self._freq_in = min(max(frequency, 20), 20000)
-        self._pulse_width_in = min(max(pulse_width, 0.00005), 0.050)
+        self._pulse_width_in = min(max(pulse_width, 0.0005), 0.500)
         self._pwm_freq_step = pwm_freq_step
 
         self._lambda_in = 1 / self._freq_in
 
         self._max_pwm_freq = (2 ** 32) - 1
         self._max_pwm_duty_cycle = (2 ** 16) - 1
-        print(self._max_pwm_freq, self._max_pwm_duty_cycle)
+        #print(self._max_pwm_freq, self._max_pwm_duty_cycle)
 
-        self._pwm_freq = 1 / (self._pulse_width_in + self._lambda_in)
+        self._gap_time = self._pulse_width_in % self._lambda_in
+        self._pwm_freq = 1 / (self._pulse_width_in + self._gap_time)
         self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
 
-        print(f"freq_in: {self._freq_in:7.0f}Hz  pulse_width_in: {self._pulse_width_in:6.6f}sec")
-        print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_duty_cycle: {self._pwm_duty_cycle:3.2f}%  {self._pwm_duty_cycle * self._max_pwm_duty_cycle:8.0f}")
+        print(f"freq_in: {self._freq_in:7.0f}Hz  lambda_in: {self._lambda_in:6.6f}sec")
+        print(f"pulse_width_in: {self._pulse_width_in:6.6f}sec  gap_time: {self._gap_time:6.6f}sec")
+        print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_lambda: {1/self._pwm_freq:6.6f}sec")
+        print(f"pwm_duty_cycle: {self._pwm_duty_cycle:3.2f}%")
         print("init completed" + "-" * 20)
 
         return
@@ -178,7 +181,7 @@ class Punk_Console:
 
     @pulse_width.setter
     def pulse_width(self, value):
-        self._pulse_width_in = min(max(value, 0.00005), 0.050)
+        self._pulse_width_in = min(max(value, 0.0005), 0.500)
         self.update()
 
     @property
@@ -194,20 +197,29 @@ class Punk_Console:
         """Recalculate and set PWM frequency and duty cycle using current
         frequency and pulse width input values."""
 
-        _inactive_duty_cycle = (1 - self._pwm_duty_cycle)
-        _inactive_duty_cycle_width = _inactive_duty_cycle * (1 / self._pwm_freq)  # in sec
-        print(_inactive_duty_cycle, self._pwm_duty_cycle, _inactive_duty_cycle_width)
-
-        if _inactive_duty_cycle_width > self._lambda_in:
-            self._pwm_freq += self._pwm_freq_step
-        elif _inactive_duty_cycle_width == 0:
-            self._pwm_freq -= self._pwm_freq_step
-
+        self._gap_time = self._pulse_width_in % self._lambda_in
+        #self._pwm_freq = 1 / (self._pulse_width_in + self._gap_time)
         self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
 
-        #print(f"freq_in: {self._freq_in:7.0f}Hz  pulse_width_in: {self._pulse_width_in:6.6f}sec")
-        #print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_duty_cycle: {self._pwm_duty_cycle:2.3f}%")
-        #print(f"inactive_duty_cycle: {_inactive_duty_cycle:3.2f}%  width: {_inactive_duty_cycle_width:6.6f}sec")
+        while self._pwm_duty_cycle >= 1.0:
+            self._pwm_freq -= self._pwm_freq_step
+            self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
+            print("adjusting pwm freq down", self._pwm_freq, self._pwm_duty_cycle)
+            #time.sleep(0.1)
+
+        while self._pwm_duty_cycle < self._pulse_width_in / (self._pulse_width_in + self._gap_time):
+            self._pwm_freq += self._pwm_freq_step
+            self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
+            print("target duty_cycle:", self._pulse_width_in / (self._pulse_width_in + self._gap_time))
+            print("adjusting pwm freq up", self._pwm_freq, self._pwm_duty_cycle)
+            #time.sleep(0.1)
+
+
+        """print(f"freq_in: {self._freq_in:7.0f}Hz  lambda_in: {self._lambda_in:6.6f}sec")
+        print(f"pulse_width_in: {self._pulse_width_in:6.6f}sec  gap_time: {self._gap_time:6.6f}sec")
+        print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_lambda: {1/self._pwm_freq:6.6f}sec")
+        print(f"pwm_duty_cycle: {self._pwm_duty_cycle:3.2f}%")
+        print("update completed" + "=" * 20)"""
 
         return
 
@@ -216,10 +228,12 @@ class Punk_Console:
 
 punk_console = Punk_Console(board.A1)
 
+
 for i in range(0, 10000, 1000):
     for j in range (0, 10000, 1000):
-        punk_console.pulse_width = j / 10000
+        punk_console.pulse_width = j / 20000
         punk_console.frequency = i
         punk_console.update()
-        #print((punk_console.frequency/1000, punk_console.pulse_width, punk_console.pwm_freq, punk_console.pwm_duty_cycle * 100))
-        print((punk_console.pwm_freq, punk_console.pwm_duty_cycle * 100))
+        print((punk_console.frequency/1000, punk_console.pulse_width, punk_console.pwm_freq, punk_console.pwm_duty_cycle * 100))
+        #print((punk_console.pwm_freq, punk_console.pwm_duty_cycle * 100))
+        #print((punk_console.pulse_width, punk_console._gap_time*1000))
