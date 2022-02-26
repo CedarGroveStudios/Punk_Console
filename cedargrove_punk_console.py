@@ -1,10 +1,11 @@
 ## SPDX-FileCopyrightText: 2022 Cedar Grove Maker Studios
-#
 # SPDX-License-Identifier: MIT
 
 """
 `cedargrove_punk_console` - CircuitPython-based Atari Punk Console.
 =================================================
+
+cedargrove_punk_console.py v0.0225
 
 A CircuitPython-based Atari Punk Console emulation class object.
 
@@ -153,10 +154,10 @@ class Punk_Console:
         print(self._max_pwm_freq, self._max_pwm_duty_cycle)
 
         self._pwm_freq = 1 / (self._pulse_width_in + self._lambda_in)
-        self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq * self._max_pwm_duty_cycle
+        self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
 
-        print(f"freq_in: {self._freq_in:7.0f}  pulse_width_in: {self._pulse_width_in:6.6f}")
-        print(f"pwm_freq: {self._pwm_freq:6.0f}  pwm_duty_cycle: {self._pwm_duty_cycle:8.0f}  {self._pwm_duty_cycle / self._max_pwm_duty_cycle:3.2f}%")
+        print(f"freq_in: {self._freq_in:7.0f}Hz  pulse_width_in: {self._pulse_width_in:6.6f}sec")
+        print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_duty_cycle: {self._pwm_duty_cycle:3.2f}%  {self._pwm_duty_cycle * self._max_pwm_duty_cycle:8.0f}")
         print("init completed" + "-" * 20)
 
         return
@@ -193,8 +194,9 @@ class Punk_Console:
         """Recalculate and set PWM frequency and duty cycle using current
         frequency and pulse width input values."""
 
-        _inactive_duty_cycle_ratio = (self._max_pwm_duty_cycle - self._pwm_duty_cycle) / self._max_pwm_duty_cycle
-        _inactive_duty_cycle_width = _inactive_duty_cycle_ratio * (1 / self._pwm_freq)  # in msec
+        _inactive_duty_cycle = (1 - self._pwm_duty_cycle)
+        _inactive_duty_cycle_width = _inactive_duty_cycle * (1 / self._pwm_freq)  # in sec
+        print(_inactive_duty_cycle, self._pwm_duty_cycle, _inactive_duty_cycle_width)
 
         if _inactive_duty_cycle_width > self._lambda_in:
             self._pwm_freq += self._pwm_freq_step
@@ -204,8 +206,8 @@ class Punk_Console:
         self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
 
         #print(f"freq_in: {self._freq_in:7.0f}Hz  pulse_width_in: {self._pulse_width_in:6.6f}sec")
-        #print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_duty_cycle: {self._pwm_duty_cycle:8.0f}  {self._pwm_duty_cycle / self._max_pwm_duty_cycle:3.2f}%")
-        #print(f"inactive_duty_cycle_ratio: {_inactive_duty_cycle_ratio:8.0f}%  width: {_inactive_duty_cycle_width:6.6f}sec")
+        #print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_duty_cycle: {self._pwm_duty_cycle:2.3f}%")
+        #print(f"inactive_duty_cycle: {_inactive_duty_cycle:3.2f}%  width: {_inactive_duty_cycle_width:6.6f}sec")
 
         return
 
@@ -219,4 +221,5 @@ for i in range(0, 10000, 1000):
         punk_console.pulse_width = j / 10000
         punk_console.frequency = i
         punk_console.update()
-        #print((punk_console.frequency/1000, punk_console.pulse_width, punk_console.pwm_freq, punk_console.pwm_duty_cycle))
+        #print((punk_console.frequency/1000, punk_console.pulse_width, punk_console.pwm_freq, punk_console.pwm_duty_cycle * 100))
+        print((punk_console.pwm_freq, punk_console.pwm_duty_cycle * 100))
