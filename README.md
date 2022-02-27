@@ -20,7 +20,7 @@ The current version of the emulator works only with PWM-capable output pins. An 
     frequency:      3Hz to 3kHz
 
 
-The CedarGrove Punk Console algorithm uses PWM frequency and duty cycle parameters to build the output waveform. The PWM output frequency is an integer multiple of the input frequency depending on the input pulse width:
+The Punk Console algorithm uses PWM frequency and duty cycle parameters to build the output waveform. The PWM output frequency is an integer multiple of the input frequency depending on the input pulse width:
 
         pwm_freq = freq_in / (int((pulse_width) * freq_in) + 1)
 
