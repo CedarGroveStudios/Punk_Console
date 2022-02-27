@@ -35,4 +35,11 @@ Notes:
 - MIDI control: A version that uses USB and/or UART MIDI is in the queue.
 - CV control: A Eurorack version was discussed, it's just a bit lower on the to-do list, that's all.
 
+https://github.com/CedarGroveStudios/Punk_Console/blob/main/docs/CG_PunkConsole_01.jpeg
+
+https://github.com/CedarGroveStudios/Punk_Console/blob/main/docs/CG_PunkConsole_02.jpeg
+
+https://github.com/CedarGroveStudios/Punk_Console/blob/main/docs/CG_PunkConsole_03.jpeg
+
+
     
