@@ -13,8 +13,9 @@ __repo__ = "https://github.com/CedarGroveStudios/Punk_Console"
 import board
 import pwmio
 
+
 class PunkConsole:
-    """ A CircuitPython-based Atari Punk Console emulation class object based on
+    """A CircuitPython-based Atari Punk Console emulation class object based on
     the "Stepped Tone Generator" circuit, "Engineer's Mini-Notebook: 555
     Circuits", Forrest M. Mims III (1984).
 
@@ -76,13 +77,13 @@ class PunkConsole:
     MIDI control: A version that uses USB and/or UART MIDI is in the queue.
 
     CV control: A Eurorack version was discussed, it's just a bit lower on the
-    to-do list, that's all.  """
+    to-do list, that's all."""
 
     def __init__(self, pin, frequency=1, pulse_width_ms=0):
         self._pin = pin
         try:
             # Instantiate PWM output with some initial low-noise values
-            self._pwm_out=pwmio.PWMOut(self._pin, variable_frequency=True)
+            self._pwm_out = pwmio.PWMOut(self._pin, variable_frequency=True)
             self._pwm_out.frequency = 1
             self._pwm_out.duty_cycle = 0x0000
         except ValueError:
@@ -100,12 +101,16 @@ class PunkConsole:
         self._pulse_width_ms = min(max(pulse_width_ms, 0.050), 5000)
 
         # Determine the PWM output frequency based on freq_in and pulse_width_ms
-        self._pwm_freq = self._freq_in / (int((self._pulse_width_ms / 1000) * self._freq_in) + 1)
+        self._pwm_freq = self._freq_in / (
+            int((self._pulse_width_ms / 1000) * self._freq_in) + 1
+        )
         self._pwm_out.frequency = int(round(self._pwm_freq, 0))
 
         # Determine the PWM output duty cycle based on pulse_width_ms and pwm_freq
         self._pwm_duty_cycle = (self._pulse_width_ms / 1000) * self._pwm_freq
-        self._pwm_out.duty_cycle = int(self._pwm_duty_cycle * self._pwm_duty_cycle_range)
+        self._pwm_out.duty_cycle = int(
+            self._pwm_duty_cycle * self._pwm_duty_cycle_range
+        )
 
         return
 
@@ -128,17 +133,20 @@ class PunkConsole:
         self._pulse_width_ms = min(max(value, 0.050), 5)
         self.update()
 
-
     def update(self):
         """Recalculate and set PWM frequency and duty cycle using current
         frequency and pulse width input values."""
 
         # Determine the PWM output frequency based on freq_in and pulse_width_ms
-        self._pwm_freq = self._freq_in / (int((self._pulse_width_ms / 1000) * self._freq_in) + 1)
+        self._pwm_freq = self._freq_in / (
+            int((self._pulse_width_ms / 1000) * self._freq_in) + 1
+        )
         self._pwm_out.frequency = int(round(self._pwm_freq, 0))
 
         # Determine the PWM output duty cycle based on pulse_width_ms and pwm_freq
         self._pwm_duty_cycle = (self._pulse_width_ms / 1000) * self._pwm_freq
-        self._pwm_out.duty_cycle = int(self._pwm_duty_cycle * self._pwm_duty_cycle_range)
+        self._pwm_out.duty_cycle = int(
+            self._pwm_duty_cycle * self._pwm_duty_cycle_range
+        )
 
         return
