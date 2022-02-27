@@ -4,164 +4,84 @@
 """
 `cedargrove_punk_console` - CircuitPython-based Atari Punk Console.
 =================================================
-
-cedargrove_punk_console.py v0.0226
+cedargrove_punk_console.py v1.0
 
 A CircuitPython-based Atari Punk Console emulation class object.
 
 * Author(s): JG for Cedar Grove Maker Studios
 """
-
-import board
-import time
-import sys
-import array  # use ulab instead?
-import digitalio
-import pwmio
-
-
-try:
-    # RawSample was moved in CircuitPython 5.x.
-    if sys.implementation.version[0] >= 5:
-        import audiocore
-    else:
-        import audioio as audiocore
-    # Some boards have AudioOut (true DAC), others have PWMAudioOut.
-    try:
-        from audioio import AudioOut
-    except ImportError:
-        from audiopwmio import PWMAudioOut as AudioOut
-except ImportError:
-    pass  # not always supported by every board!
-
-
-__version__ = "3.0.2"
 __repo__ = "https://github.com/CedarGroveStudios/Punk_Console"
 
+import board
+import pwmio
 
-def tone(pin, frequency, duration=1, length=100):
-    """
-    Generates a square wave of the specified frequency on a pin
-
-    :param ~microcontroller.Pin pin: Pin on which to output the tone
-    :param float frequency: Frequency of tone in Hz
-    :param int length: Variable size buffer (optional)
-    :param int duration: Duration of tone in seconds (optional)
-    """
-    if length * frequency > 350000:
-        length = 350000 // frequency
-    try:
-        # pin with PWM
-        # pylint: disable=no-member
-        with pwmio.PWMOut(
-            pin, frequency=int(frequency), variable_frequency=False
-        ) as pwm:
-            pwm.duty_cycle = 0x8000
-            time.sleep(duration)
-        # pylint: enable=no-member
-    except ValueError:
-        # pin without PWM
-        sample_length = length
-        square_wave = array.array("H", [0] * sample_length)
-        for i in range(sample_length / 2):
-            square_wave[i] = 0xFFFF
-        square_wave_sample = audiocore.RawSample(square_wave)
-        square_wave_sample.sample_rate = int(len(square_wave) * frequency)
-        with AudioOut(pin) as dac:
-            if not dac.playing:
-                dac.play(square_wave_sample, loop=True)
-                time.sleep(duration)
-            dac.stop()
-
-def map_range(x, in_min, in_max, out_min, out_max):
-    """
-    Maps a value from one range to another.
-
-    :return: Returns value mapped to new range
-    :rtype: float
-    """
-    in_range = in_max - in_min
-    in_delta = x - in_min
-    if in_range != 0:
-        mapped = in_delta / in_range
-    elif in_delta != 0:
-        mapped = in_delta
-    else:
-        mapped = 0.5
-    mapped *= out_max - out_min
-    mapped += out_min
-    if out_min <= out_max:
-        return max(min(mapped, out_max), out_min)
-    return min(max(mapped, out_max), out_min)
-
-class Punk_Console:
-    """
-    A CircuitPython-based Atari Punk Console emulation class object.
+class PunkConsole:
+    """ A CircuitPython-based Atari Punk Console emulation class object based
+    on the "Stepped Tone Generator" circuit, "Engineer's Mini-Notebook: 555
+    Circuits", Forrest M. Mims III (1984).
 
     Input ranges:
-    pulse_width: 500us  to 500ms (2kHz to  2Hz)
-    frequency:    20kHz to  20Hz (50us to 50ms)
+    pulse_width: 50us to  5sec (2kHz to  2Hz; may be limited by the MPU)
+    frequency:    1Hz to >4MHz (may be limited by the MPU)
 
-    PWM ranges:
+    Practical input ranges for audio (emperically determined):
+    pulse_width: 0.5ms to 5ms
+    frequency: 3Hz to 3kHz
+
+    PWM output ranges:
     pwm frequency:  0 to 2**32 -1  (32-bits)
     pwm duty_cycle: 0 to 2**16 -1  (16-bits)
 
-    This version of the algorithm uses PWM to build the output waveform.
-    The PWM frequency will shift to provide the granularity needed to
-    represent both the pulse width input value (_pulse_width_in) and the frequency input
-    wavelength (_lambda_in):
-        _pwm_freq = 1 / (_pulse_width_in + _lambda_in)
+    The CedarGrove Punk Console algorithm uses PWM frequency and duty cycle
+    parameters to build the output waveform. The PWM output frequency is an
+    integer multiple of the input frequency depending on the input pulse width:
 
-    The PWM duty cycle establishes the relationship between the pulse width
-    input (_pulse_width_in) and the PWM frequency (_pwm_freq):
-        _pwm_duty_cycle = _pulse_width_in * _pwm_freq
+        pwm_freq = freq_in / (int((pulse_width) * freq_in) + 1)
 
-    Step 1 (initialize):
-        Set the PWM frequency based upon the input values.
-    Step 2 (initialize):
-        Set the PWM duty cycle based upon the PWM frequency and pulse width
-        input values.
-    Step 3 (update):
-        Test for boundaries:
-            If the inactive portion of the output waveform becomes larger
-            than the wavelength of the frequency input, adjust the PWM
-            clock upwards (using _pwm_freq_step) until the inactive portion
-            is smaller than or equal to the wavelength of the frequency
-            input.
-            If the inactive portion equals zero, adjust the PWM clock
-            downwards until the inactive portion is no longer zero.
-        Adjust the PWM duty cycle for the new values.
+    The PWM output duty cycle is calculated after the PWM output frequency is
+    determined. The PWM output duty cycle is the ratio of the input pulse width
+    and the wavelength of the PWM output frequency:
+
+        pwm_duty_cycle = pulse_width * pwm_freq
 
     Notes:
-    If the specified pin is non-PWM, then adjust the duty cycle with the
-    contents of the audiocore.RawSample binary array. The
+    Future update: For non-PWM analog pins, use audiocore with a waveform sample
+    in the RawSample binary array, similar to the simpleio.tone() helper. Adjust
+    the output waveform's duty cycle by altering the contents of the array,
+    perhaps with ulab to improve code execution time. The
     audiocore.RawSample.sample_rate frequency will be proportional to the
-    PWM frequency value, likely the sample_rate divided by the length of the
-    audiocore.RawSample array (number of samples). Consider using ulab for
-    the array if changes become execution time constrained.
-    """
+    original algorithm's PWM frequency output value, likely calculated from the
+    sample_rate divided by the length of the audiocore.RawSample array (number
+    of samples).  """
 
-    def __init__(self, pin, frequency=0, pulse_width=0.210, pwm_freq_step=1):
+    def __init__(self, pin, frequency=1, pulse_width_ms=0):
         self._pin = pin
-        self._freq_in = min(max(frequency, 20), 20000)
-        self._pulse_width_in = min(max(pulse_width, 0.0005), 0.500)
-        self._pwm_freq_step = pwm_freq_step
+        try:
+            # Instantiate PWM output with some initial low-noise values
+            self._pwm_out=pwmio.PWMOut(self._pin, variable_frequency=True)
+            self._pwm_out.frequency = 1
+            self._pwm_out.duty_cycle = 0x0000
+        except ValueError:
+            # The pin is not PWM capable
+            print("Specified pin is not PWM capable.")
 
-        self._lambda_in = 1 / self._freq_in
+        # Set the maximum PWM frequency and duty cycle values (PWMOut limits)
+        self._pwm_freq_range = (2 ** 32) - 1  # 4,294,967,295Hz (32-bits)
+        self._pwm_duty_cycle_range = (2 ** 16) - 1  # 65,535 = 1.0 duty cycle (16-bits)
 
-        self._max_pwm_freq = (2 ** 32) - 1
-        self._max_pwm_duty_cycle = (2 ** 16) - 1
-        #print(self._max_pwm_freq, self._max_pwm_duty_cycle)
+        # Limit the input frequency range; 1 Hz to PWM maximum frequency
+        self._freq_in = min(max(frequency, 1), self._pwm_freq_range)
 
-        self._gap_time = self._pulse_width_in % self._lambda_in
-        self._pwm_freq = 1 / (self._pulse_width_in + self._gap_time)
-        self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
+        # Limit the input pulse_width to an emperically-determined range: 50us to 5 seconds
+        self._pulse_width_ms = min(max(pulse_width_ms, 0.050), 5000)
 
-        print(f"freq_in: {self._freq_in:7.0f}Hz  lambda_in: {self._lambda_in:6.6f}sec")
-        print(f"pulse_width_in: {self._pulse_width_in:6.6f}sec  gap_time: {self._gap_time:6.6f}sec")
-        print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_lambda: {1/self._pwm_freq:6.6f}sec")
-        print(f"pwm_duty_cycle: {self._pwm_duty_cycle:3.2f}%")
-        print("init completed" + "-" * 20)
+        # Determine the PWM output frequency based on freq_in and pulse_width_ms
+        self._pwm_freq = self._freq_in / (int((self._pulse_width_ms / 1000) * self._freq_in) + 1)
+        self._pwm_out.frequency = int(round(self._pwm_freq, 0))
+
+        # Determine the PWM output duty cycle based on pulse_width_ms and pwm_freq
+        self._pwm_duty_cycle = (self._pulse_width_ms / 1000) * self._pwm_freq
+        self._pwm_out.duty_cycle = int(self._pwm_duty_cycle * self._pwm_duty_cycle_range)
 
         return
 
@@ -171,69 +91,30 @@ class Punk_Console:
 
     @frequency.setter
     def frequency(self, value):
-        self._freq_in = min(max(value, 20), 20000)
+        self._freq_in = min(max(value, 1), (2 ** 32) - 1)
         self._lambda_in = 1 / self._freq_in
         self.update()
 
     @property
-    def pulse_width(self):
+    def pulse_width_ms(self):
         return self._pulse_width_in
 
-    @pulse_width.setter
-    def pulse_width(self, value):
-        self._pulse_width_in = min(max(value, 0.0005), 0.500)
+    @pulse_width_ms.setter
+    def pulse_width_ms(self, value):
+        self._pulse_width_ms = min(max(value, 0.050), 5)
         self.update()
-
-    @property
-    def pwm_freq(self):
-        return self._pwm_freq
-
-    @property
-    def pwm_duty_cycle(self):
-        return self._pwm_duty_cycle
 
 
     def update(self):
         """Recalculate and set PWM frequency and duty cycle using current
         frequency and pulse width input values."""
 
-        self._gap_time = self._pulse_width_in % self._lambda_in
-        #self._pwm_freq = 1 / (self._pulse_width_in + self._gap_time)
-        self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
+        # Determine the PWM output frequency based on freq_in and pulse_width_ms
+        self._pwm_freq = self._freq_in / (int((self._pulse_width_ms / 1000) * self._freq_in) + 1)
+        self._pwm_out.frequency = int(round(self._pwm_freq, 0))
 
-        while self._pwm_duty_cycle >= 1.0:
-            self._pwm_freq -= self._pwm_freq_step
-            self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
-            print("adjusting pwm freq down", self._pwm_freq, self._pwm_duty_cycle)
-            #time.sleep(0.1)
-
-        while self._pwm_duty_cycle < self._pulse_width_in / (self._pulse_width_in + self._gap_time):
-            self._pwm_freq += self._pwm_freq_step
-            self._pwm_duty_cycle = self._pulse_width_in * self._pwm_freq
-            print("target duty_cycle:", self._pulse_width_in / (self._pulse_width_in + self._gap_time))
-            print("adjusting pwm freq up", self._pwm_freq, self._pwm_duty_cycle)
-            #time.sleep(0.1)
-
-
-        """print(f"freq_in: {self._freq_in:7.0f}Hz  lambda_in: {self._lambda_in:6.6f}sec")
-        print(f"pulse_width_in: {self._pulse_width_in:6.6f}sec  gap_time: {self._gap_time:6.6f}sec")
-        print(f"pwm_freq: {self._pwm_freq:6.0f}Hz  pwm_lambda: {1/self._pwm_freq:6.6f}sec")
-        print(f"pwm_duty_cycle: {self._pwm_duty_cycle:3.2f}%")
-        print("update completed" + "=" * 20)"""
+        # Determine the PWM output duty cycle based on pulse_width_ms and pwm_freq
+        self._pwm_duty_cycle = (self._pulse_width_ms / 1000) * self._pwm_freq
+        self._pwm_out.duty_cycle = int(self._pwm_duty_cycle * self._pwm_duty_cycle_range)
 
         return
-
-
-
-
-punk_console = Punk_Console(board.A1)
-
-
-for i in range(0, 10000, 1000):
-    for j in range (0, 10000, 1000):
-        punk_console.pulse_width = j / 20000
-        punk_console.frequency = i
-        punk_console.update()
-        print((punk_console.frequency/1000, punk_console.pulse_width, punk_console.pwm_freq, punk_console.pwm_duty_cycle * 100))
-        #print((punk_console.pwm_freq, punk_console.pwm_duty_cycle * 100))
-        #print((punk_console.pulse_width, punk_console._gap_time*1000))
