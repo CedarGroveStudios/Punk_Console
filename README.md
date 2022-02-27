@@ -1,7 +1,7 @@
 # CedarGroveStudios Punk_Console
  
 
-A CircuitPython-based Atari Punk Console emulation class object based on the "Stepped Tone Generator" circuit, "Engineer's Mini-Notebook: 555 Circuits", Forrest M. Mims III (1984).
+A CircuitPython-based Atari Punk Console emulator class object based on the "Stepped Tone Generator" circuit, "Engineer's Mini-Notebook: 555 Circuits", Forrest M. Mims III (1984).
 
 The CedarGroveStudios Punk Console emulates an astable square-wave oscillator and synchronously triggered variable one-shot monostable multivibrator to create the classic stepped-tone generator sound of the Atari Punk Console. As with the original circuit, the oscillator frequency and one-shot pulse width are the variable inputs. Once the Punk Console class is instantiated, the two input values are set and the `update()` function is called to adjust the PWM output pin to to create the output waveform.
 
