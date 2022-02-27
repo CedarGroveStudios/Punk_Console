@@ -3,7 +3,7 @@
 
 A CircuitPython-based Atari Punk Console emulation class object based on the "Stepped Tone Generator" circuit, "Engineer's Mini-Notebook: 555 Circuits", Forrest M. Mims III (1984).
 
-The CedarGrove Punk Console emulates an astable square-wave oscillator and synchronously triggered variable one-shot monostable multivibrator to create the classic stepped-tone generator sound of the Atari Punk Console. As with the original circuit, the oscillator frequency and one-shot pulse width are the variable inputs. Once the Punk Console class is instantiated, the two input values are set and the `update()` function is called to adjust the PWM output pin to to create the output waveform.
+The CedarGroveStudios Punk Console emulates an astable square-wave oscillator and synchronously triggered variable one-shot monostable multivibrator to create the classic stepped-tone generator sound of the Atari Punk Console. As with the original circuit, the oscillator frequency and one-shot pulse width are the variable inputs. Once the Punk Console class is instantiated, the two input values are set and the `update()` function is called to adjust the PWM output pin to to create the output waveform.
 
 Depending on the timer and PWM capabilities of the host MPU board, the emulator can easily outperform the original analog circuit. Oscillator frequency is only limited by the MPU's PWM duty cycle and frequency parameters which can create output signals well above the practical audio hearing range. Therefore, it is recommended that one-shot pulse width input be limited to the range of 0.5ms and 5ms and that the oscillator frequency input range be between 3Hz and 3kHz -- although experimentation is encouraged!
 
