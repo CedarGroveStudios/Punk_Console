@@ -38,6 +38,8 @@ Notes:
 
 - CV control: A Eurorack version was discussed, it's just a bit lower on the to-do list, that's all.
 
+![Original Step Tone Generator Diagram](https://github.com/CedarGroveStudios/Punk_Console/blob/main/docs/CG_PunkConsole_04.jpeg)
+
 ![Oscillator Triggers One-Shot](https://github.com/CedarGroveStudios/Punk_Console/blob/main/docs/CG_PunkConsole_01.jpeg)
 
 ![Pulse Width Input Decreases](https://github.com/CedarGroveStudios/Punk_Console/blob/main/docs/CG_PunkConsole_02.jpeg)
