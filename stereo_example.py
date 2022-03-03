@@ -5,10 +5,10 @@
 
 # Tested on an RP2040 Feather using CircuitPython v7.1.1
 # Waveform Output pins:
-#   left channel: A1 (PWM digital, not analog DAC output)
-#   right channel: D13 (PWM digital)
-# Oscillator Frequency Input pin: A2
-# One-Shot Multivibrator Pulse Width Input pin: A3
+#   left channel: A1 (PWM digital output, not analog DAC output)
+#   right channel: D13 (PWM digital output)
+# Oscillator Frequency Input pin: A2 (analog input)
+# One-Shot Multivibrator Pulse Width Input pin: A3 (analog input)
 
 import board
 import analogio
@@ -16,7 +16,7 @@ import pwmio
 from simpleio import map_range
 from cedargrove_punk_console import PunkConsole
 
-# instantiate a PunkConsole output on pin A1
+# instantiate a PunkConsole output on pin A1 and D13
 punk_console_l = PunkConsole(board.A1)
 punk_console_r = PunkConsole(board.D13)
 
