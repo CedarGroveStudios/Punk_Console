@@ -12,7 +12,7 @@ The repo contains two examples, a simple single-channel console and an annoying 
 The current version of the emulator works only with PWM-capable output pins. An analog output (DAC) waveform version is in the works.
 
 
-    Minimim and maximum input ranges (may be further limited by the MPU):
+    Typical minimim and maximum input ranges (subject to MPU limitations):
     pulse_width: 0.05ms to  5000ms
     frequency:      1Hz to >4MHz
 
