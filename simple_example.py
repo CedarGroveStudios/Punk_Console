@@ -1,7 +1,7 @@
 ## SPDX-FileCopyrightText: 2022 Cedar Grove Maker Studios
 # SPDX-License-Identifier: MIT
 
-# cedargrove_punk_console.simple_example.py v1.0
+# cedargrove_punk_console.simple_example.py v1.1
 
 # Tested on an RP2040 Feather using CircuitPython v7.1.1
 # Waveform Output pin: A1 (PWM digital output, not analog DAC output)
@@ -15,7 +15,7 @@ from simpleio import map_range
 from cedargrove_punk_console import PunkConsole
 
 # instantiate a PunkConsole output on pin A1 (PWM-capable)
-punk_console = PunkConsole(board.A1)
+punk_console = PunkConsole(board.A1, mute=True)
 
 # define the two potentiometer inputs
 f_in = analogio.AnalogIn(board.A2)  # Oscillator Frequency

@@ -1,14 +1,14 @@
 ## SPDX-FileCopyrightText: 2022 Cedar Grove Maker Studios
 # SPDX-License-Identifier: MIT
 
-# cedargrove_punk_console.stereo_example.py v1.0
+# cedargrove_punk_console.stereo_example.py v1.1
 
 # Tested on an RP2040 Feather using CircuitPython v7.1.1
 # Waveform Output pins:
-#   left channel: A1 (PWM digital output, not analog DAC output)
-#   right channel: D13 (PWM digital output)
-# Oscillator Frequency Input pin: A2 (analog input)
-# One-Shot Multivibrator Pulse Width Input pin: A3 (analog input)
+#   left channel: A1 (PWM digital, not analog DAC output)
+#   right channel: D13 (PWM digital)
+# Oscillator Frequency Input pin: A2
+# One-Shot Multivibrator Pulse Width Input pin: A3
 
 import board
 import analogio
@@ -16,12 +16,17 @@ import pwmio
 from simpleio import map_range
 from cedargrove_punk_console import PunkConsole
 
-# instantiate a PunkConsole output on pin A1 and D13
+# instantiate PunkConsole outputs on pin A1 and D13; defaults to muted
 punk_console_l = PunkConsole(board.A1)
 punk_console_r = PunkConsole(board.D13)
 
+# Get the analog input control signals from pins A2 and A3
 f_in = analogio.AnalogIn(board.A2)  # Oscillator Frequency
 pw_in = analogio.AnalogIn(board.A3)  # One-Shot Pulse Width
+
+# Turn on outputs
+punk_console_l.mute = False
+punk_console_r.mute = False
 
 while True:
     # read the inputs, map to practical audio ranges, send to PunkConsole instances
