@@ -1,5 +1,6 @@
 # CedarGroveStudios Punk_Console
 
+![Punk Console Stereo Test](https://github.com/CedarGroveStudios/Punk_Console/blob/main/docs/Stereo_Punk_Console_test.png)
 
 A CircuitPython-based Atari Punk Console emulator class object based on the "Stepped Tone Generator" circuit, "Engineer's Mini-Notebook: 555 Circuits", Forrest M. Mims III (1984).
 
