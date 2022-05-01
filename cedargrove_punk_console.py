@@ -27,6 +27,8 @@ class PunkConsole:
     input values are provided and the update() function is called to adjust the
     PWM parameters of the output pin to to create the output waveform.
 
+    This version of the emulator works only with PWM-capable output pins.
+
     Depending on the timer and PWM capabilities of the host MPU board, the
     emulator can easily outperform the original analog circuit. Oscillator
     frequency is only limited by the MPU's PWM duty cycle and frequency
@@ -36,12 +38,12 @@ class PunkConsole:
     input range be between 3Hz and 3kHz -- although experimentation is
     encouraged!
 
-    The repo contains two examples, a simple single-channel console and an
-    annoying stereo noisemaker. Input is provided by potentiometers attached to
-    two analog input pins.
-
-    The current version of the emulator works only with PWM-capable output pins.
-    An analog output (DAC) waveform version is in the works.
+    The repo contains three examples, a simple single-channel console, an
+    annoying stereo noisemaker, and a note table driven sequencer. For the first
+    two examples, input is provided by potentiometers attached to
+    two analog input pins. The sequencer is controlled by an internal list of
+    notes that select the oscillator frequency; pulse width is potentiometer
+    controlled.
 
     Minimim and maximum input ranges (may be further limited by the MPU):
     pulse_width: 0.05ms to  5000ms
@@ -76,6 +78,7 @@ class PunkConsole:
 
     MIDI control: A version that uses USB and/or UART MIDI is in the queue. Note
     that the property `PunkConsole.mute` could be used for note-on and note-off.
+    `note_in_example.py` shows how muting can be used for individual notes.
 
     CV control: A Eurorack version was discussed, it's just a bit lower on the
     to-do list, that's all."""
@@ -115,13 +118,13 @@ class PunkConsole:
         # Limit the input pulse_width to an emperically-determined range: 50us to 5 seconds
         self._pulse_width_ms = min(max(pulse_width_ms, 0.050), 5000)
 
-        # Determine the PWM output frequency based on freq_in and pulse_width_ms
+        # Set the PWM output frequency based on freq_in and pulse_width_ms
         self._pwm_freq = self._freq_in / (
             int((self._pulse_width_ms / 1000) * self._freq_in) + 1
         )
         self._pwm_out.frequency = int(round(self._pwm_freq, 0))
 
-        # Determine the PWM output duty cycle based on pulse_width_ms and pwm_freq
+        # Set the PWM output duty cycle based on pulse_width_ms and pwm_freq
         self._pwm_duty_cycle = (self._pulse_width_ms / 1000) * self._pwm_freq
         if not self._mute:
             self._pwm_out.duty_cycle = int(
@@ -138,7 +141,7 @@ class PunkConsole:
     def frequency(self, new_frequency):
         self._freq_in = min(max(new_frequency, 1), (2**32) - 1)
         self._lambda_in = 1 / self._freq_in
-        self.update()
+        self._update()
 
     @property
     def pulse_width_ms(self):
@@ -147,7 +150,7 @@ class PunkConsole:
     @pulse_width_ms.setter
     def pulse_width_ms(self, new_width):
         self._pulse_width_ms = min(max(new_width, 0.050), 5)
-        self.update()
+        self._update()
 
     @property
     def mute(self):
@@ -156,19 +159,19 @@ class PunkConsole:
     @mute.setter
     def mute(self, new_mute):
         self._mute = new_mute
-        self.update()
+        self._update()
 
-    def update(self):
+    def _update(self):
         """Recalculate and set PWM frequency and duty cycle using current
         frequency and pulse width input values."""
 
-        # Determine the PWM output frequency based on freq_in and pulse_width_ms
+        # Set the PWM output frequency based on freq_in and pulse_width_ms
         self._pwm_freq = self._freq_in / (
             int((self._pulse_width_ms / 1000) * self._freq_in) + 1
         )
         self._pwm_out.frequency = int(round(self._pwm_freq, 0))
 
-        # Determine the PWM output duty cycle based on pulse_width_ms and pwm_freq
+        # Set the PWM output duty cycle based on pulse_width_ms and pwm_freq
         self._pwm_duty_cycle = (self._pulse_width_ms / 1000) * self._pwm_freq
         if not self._mute:
             self._pwm_out.duty_cycle = int(
