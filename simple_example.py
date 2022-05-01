@@ -15,7 +15,7 @@ from simpleio import map_range
 from cedargrove_punk_console import PunkConsole
 
 # instantiate a PunkConsole output on pin A1 (PWM-capable)
-punk_console = PunkConsole(board.A1, mute=True)
+punk_console = PunkConsole(board.A1, mute=False)
 
 # define the two potentiometer inputs
 f_in = analogio.AnalogIn(board.A2)  # Oscillator Frequency
