@@ -13,6 +13,7 @@ import board
 import analogio
 import pwmio
 from simpleio import map_range
+# Note converters: https://github.com/CedarGroveStudios/Unit_Converter
 from cedargrove_unit_converter.music_MIDI import note_or_name, note_to_frequency
 from cedargrove_punk_console import PunkConsole
 
