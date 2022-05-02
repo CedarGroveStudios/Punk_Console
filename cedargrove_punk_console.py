@@ -5,7 +5,7 @@
 `cedargrove_punk_console` - CircuitPython-based Atari Punk Console.
 =================================================
 A CircuitPython-based Atari Punk Console emulation class object.
-* Filename: cedargrove_punk_console.py v1.1
+* Filename: cedargrove_punk_console.py v1.2
 * Author(s): JG for Cedar Grove Maker Studios
 """
 __repo__ = "https://github.com/CedarGroveStudios/Punk_Console"
@@ -98,6 +98,8 @@ class PunkConsole:
         """
 
         self._pin = pin
+        self._freq_in = frequency
+        self._pulse_width_ms = pulse_width_ms
         self._mute = mute
         try:
             # Instantiate PWM output with some initial low-noise values
@@ -112,26 +114,7 @@ class PunkConsole:
         self._pwm_freq_range = (2**32) - 1  # 4,294,967,295Hz (32-bits)
         self._pwm_duty_cycle_range = (2**16) - 1  # 65,535 = 1.0 duty cycle (16-bits)
 
-        # Limit the input frequency range; 1 Hz to PWM maximum frequency
-        self._freq_in = min(max(frequency, 1), self._pwm_freq_range)
-
-        # Limit the input pulse_width to an emperically-determined range: 50us to 5 seconds
-        self._pulse_width_ms = min(max(pulse_width_ms, 0.050), 5000)
-
-        # Set the PWM output frequency based on freq_in and pulse_width_ms
-        self._pwm_freq = self._freq_in / (
-            int((self._pulse_width_ms / 1000) * self._freq_in) + 1
-        )
-        self._pwm_out.frequency = int(round(self._pwm_freq, 0))
-
-        # Set the PWM output duty cycle based on pulse_width_ms and pwm_freq
-        self._pwm_duty_cycle = (self._pulse_width_ms / 1000) * self._pwm_freq
-        if not self._mute:
-            self._pwm_out.duty_cycle = int(
-                self._pwm_duty_cycle * self._pwm_duty_cycle_range
-            )
-        else:
-            self._pwm_out.duty_cycle = 0
+        self._update()
 
     @property
     def frequency(self):
@@ -139,7 +122,7 @@ class PunkConsole:
 
     @frequency.setter
     def frequency(self, new_frequency):
-        self._freq_in = min(max(new_frequency, 1), (2**32) - 1)
+        self._freq_in = min(max(new_frequency, 1), self._pwm_freq_range)
         self._lambda_in = 1 / self._freq_in
         self._update()
 
@@ -149,7 +132,7 @@ class PunkConsole:
 
     @pulse_width_ms.setter
     def pulse_width_ms(self, new_width):
-        self._pulse_width_ms = min(max(new_width, 0.050), 5)
+        self._pulse_width_ms = min(max(new_width, 0.050), 5000)
         self._update()
 
     @property
