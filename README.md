@@ -37,7 +37,7 @@ Notes:
 
 - MIDI control: A version that uses USB and/or UART MIDI is in the queue. Note that the `PunkConsole.mute` property could be used for note-on and note-off. `note_in_example.py` shows how muting can be used for individual notes.
 
-- CV control: A Eurorack version was discussed, it's just a bit lower on the to-do list, that's all.
+- CV control: A Eurorack version was discussed, it's just a bit lower on the to-do list, that's all. But you know, the first two examples use analog inputs for frequency and pulse width control. Just sayin'.
 
 ![Original Step Tone Generator Diagram](https://github.com/CedarGroveStudios/Punk_Console/blob/main/docs/CG_PunkConsole_04.jpeg)
 
