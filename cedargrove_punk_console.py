@@ -23,9 +23,11 @@ class PunkConsole:
     synchronized non-retriggerable one-shot monostable multivibrator to create
     the classic stepped-tone generator sound of the Atari Punk Console. As with
     the original circuit, the oscillator frequency and one-shot pulse width are
-    the input parameters. Once the Punk Console class is instantiated, the two
-    input values are provided and the update() function is called to adjust the
-    PWM parameters of the output pin to to create the output waveform.
+    the input parameters. Instantiation of the Punk Console class will start the
+    output waveform based on the input parameters and enable the output signal
+    if `mute=False`. If no input parameters are provided, the output signal
+    will be disabled regardless of the mute value. Once instantiated, the class
+    is controlled by the `frequency`, `pulse_width_ms`, and `mute` properties.
 
     This version of the emulator works only with PWM-capable output pins.
 
@@ -101,20 +103,21 @@ class PunkConsole:
         self._freq_in = frequency
         self._pulse_width_ms = pulse_width_ms
         self._mute = mute
-        try:
-            # Instantiate PWM output with some initial low-noise values
-            self._pwm_out = pwmio.PWMOut(self._pin, variable_frequency=True)
-            self._pwm_out.frequency = 1
-            self._pwm_out.duty_cycle = 0x0000
-        except ValueError:
-            # The pin is not PWM capable
-            print("Specified pin is not PWM capable.")
 
         # Set the maximum PWM frequency and duty cycle values (PWMOut limits)
         self._pwm_freq_range = (2**32) - 1  # 4,294,967,295Hz (32-bits)
         self._pwm_duty_cycle_range = (2**16) - 1  # 65,535 = 1.0 duty cycle (16-bits)
 
-        self._update()
+        try:
+            # Instantiate PWM output with some initial low-noise values
+            self._pwm_out = pwmio.PWMOut(self._pin, variable_frequency=True)
+            self._pwm_out.frequency = 1
+            self._pwm_out.duty_cycle = 0x0000
+            self._update()
+        except ValueError:
+            # The pin is not PWM capable
+            print("Specified pin is not PWM capable.")
+
 
     @property
     def frequency(self):
@@ -145,7 +148,7 @@ class PunkConsole:
         self._update()
 
     def _update(self):
-        """Recalculate and set PWM frequency and duty cycle using current
+        """Calculate and set PWM frequency and duty cycle using current
         frequency and pulse width input values."""
 
         # Set the PWM output frequency based on freq_in and pulse_width_ms
